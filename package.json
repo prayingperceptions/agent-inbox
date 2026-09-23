@@ -1,0 +1,16 @@
+{
+  "name": "agent-inbox",
+  "version": "0.1.0",
+  "description": "Agentic identity + inbox where the email address IS a readable wallet-derived handle, verification is auto-processed, and the identity receives x402 micropayments.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["x402", "base", "coinbase", "agent-identity", "inbox", "wallet-email", "micropayments", "verification"],
+  "license": "MIT"
+}
