@@ -1,16 +1,21 @@
 {
   "name": "agent-inbox",
-  "version": "0.1.0",
-  "description": "Agentic identity + inbox where the email address IS a readable wallet-derived handle, verification is auto-processed, and the identity receives x402 micropayments.",
+  "version": "0.2.0",
+  "description": "Agentic identity + inbox where the email address IS a readable, wallet-derived handle; verifications are SSRF-safe and HMAC-signed; the identity receives x402 micropayments. 'Sign in with your wallet address.'",
   "type": "module",
-  "main": "src/server.js",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./address": "./src/address.js",
+    "./inbox": "./src/inbox.js",
+    "./package.json": "./package.json"
+  },
+  "files": ["src/", "LICENSE", "README.md"],
   "scripts": {
     "start": "node src/server.js",
     "test": "node test.js"
   },
-  "engines": {
-    "node": ">=18"
-  },
-  "keywords": ["x402", "base", "coinbase", "agent-identity", "inbox", "wallet-email", "micropayments", "verification"],
+  "engines": { "node": ">=18" },
+  "keywords": ["x402", "base", "coinbase", "agent-identity", "inbox", "wallet-email", "micropayments", "verification", "sign-in-with-wallet", "ssrf", "hmac"],
   "license": "MIT"
 }
