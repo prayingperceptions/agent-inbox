@@ -14,7 +14,7 @@ import crypto from "node:crypto";
 import { MemoryStore } from "./store.js";
 
 export class Inbox {
-  constructor({ secret = "", allowlist = [], store, persist }) {
+  constructor({ secret = "", allowlist = [], store, persist } = {}) {
     this.store = store || MemoryStore; // durable adapter (defaults to in-memory)
     this.persist = persist !== false; // if true, writes through to store
     this._cache = new Map(); // runtime cache mirror for fast reads

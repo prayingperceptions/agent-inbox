@@ -20,6 +20,27 @@ function send(res, status, obj, headers = {}) {
   res.end(JSON.stringify(obj, null, 2));
 }
 
+// Audit item #1: abuse guard. In live x402 mode, payment throttles naturally;
+// in mock/free mode, enforce a per-client 429 window.
+const _buckets = new Map();
+function applyRateLimit(req, path) {
+  const mode = process.env.PAYMENT_MODE || process.env.X402_MODE || "mock";
+  if (mode === "live") return null;
+  const fwd = req.headers["x-forwarded-for"] || req.headers["x-real-ip"];
+  const key = (fwd ? String(fwd).split(",")[0].trim() : "unknown") + ":" + path;
+  const max = Number(process.env.RATE_LIMIT_MAX || 100);
+  const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000);
+  const t = Date.now();
+  let b = _buckets.get(key);
+  if (!b) { b = { start: t, count: 0 }; _buckets.set(key, b); }
+  if (t - b.start >= windowMs) { b.start = t; b.count = 0; }
+  if (b.count >= max) {
+    return { status: 429, body: { error: "rate_limited", retryAfterMs: windowMs - (t - b.start) } };
+  }
+  b.count++;
+  return null;
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const method = req.method;
@@ -46,33 +67,35 @@ const server = http.createServer(async (req, res) => {
     for await (const chunk of req) body += chunk;
     let payload = {};
     try { payload = JSON.parse(body || "{}"); } catch { return send(res, 400, { error: "invalid JSON" }); }
-    const result = inbox.deliver(handle, {
+    const result = (await inbox.deliver(handle, {
       from: payload.from, subject: payload.subject, text: payload.text, html: payload.html,
-    });
+    }));
     return send(res, 201, result);
   }
 
   // List messages / verifications.
   if (method === "GET" && path.startsWith("/inbox/") && path.endsWith("/messages")) {
     const handle = decodeURIComponent(path.slice("/inbox/".length, -"/messages".length));
-    return send(res, 200, { handle, messages: inbox.listMessages(handle) });
+    return send(res, 200, { handle, messages: (await inbox.listMessages(handle)) });
   }
   if (method === "GET" && path.startsWith("/inbox/") && path.endsWith("/verifications")) {
     const handle = decodeURIComponent(path.slice("/inbox/".length, -"/verifications".length));
-    return send(res, 200, { handle, verifications: inbox.listVerifications(handle) });
+    return send(res, 200, { handle, verifications: (await inbox.listVerifications(handle)) });
   }
 
   // Process a verification — the money moment: x402-gated in live mode.
   const verifyMatch = path.match(/^\/inbox\/(.+)\/verify\/([^/]+)$/);
   if (method === "POST" && verifyMatch) {
     const [, handle, verifyId] = verifyMatch.map(decodeURIComponent);
+    const limited = applyRateLimit(req, "/inbox/verify");
+    if (limited) { res.writeHead(limited.status, { "Content-Type": "application/json" }); res.end(JSON.stringify(limited.body)); return; }
     let gate = await gatePayment(req, url.toString(), process.env);
     if (!gate.paid) {
       res.writeHead(gate.status, gate.headers);
       res.end(gate.body);
       return;
     }
-    const result = inbox.processVerification(handle, verifyId);
+    const result = (await inbox.processVerification(handle, verifyId));
     const status = result.ok ? 200 : 404;
     return send(res, status, { ...result, payment: gate.mode ? { mode: gate.mode } : { txHash: gate.txHash } });
   }
