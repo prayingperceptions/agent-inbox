@@ -6,7 +6,8 @@ import { handleForAddress, handleFingerprint, classifyAddress } from "../src/add
 
 export default function handler(req, res) {
   const url = new URL(req.url, `https://${req.headers.host || "localhost"}`);
-  const path = url.pathname;
+  // Vercel passes a prefixed path (e.g. /api/index.js/health); normalize it.
+  let path = url.pathname.replace(/^\/api\/index\.js/, "").replace(/\/$/, "") || "/";
 
   if (path === "/health" || path === "/") {
     res.status(200).json({
