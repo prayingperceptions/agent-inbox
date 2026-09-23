@@ -19,6 +19,15 @@ export class Inbox {
     this.persist = persist !== false; // if true, writes through to store
     this._cache = new Map(); // runtime cache mirror for fast reads
     this.secret = secret || process.env.INBOX_SECRET || "dev-insecure-secret";
+    // FAIL-CLOSED (audit #4): signing proofs with the dev secret in a prod env
+    // is a forge risk. Warn loudly, require explicit opt-in.
+    if (
+      this.secret === "dev-insecure-secret" &&
+      (process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production") &&
+      process.env.ALLOW_DEV_INBOX_SECRET !== "true"
+    ) {
+      console.warn("[agent-inbox] WARNING: INBOX_SECRET is the insecure dev default in a production env. Proof signatures can be forged. Set INBOX_SECRET or ALLOW_DEV_INBOX_SECRET=true to suppress.");
+    }
     this.allowlist = new Set(
       (allowlist.length
         ? allowlist
