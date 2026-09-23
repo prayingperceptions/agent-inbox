@@ -22,7 +22,7 @@ const secureInbox = new Inbox({ secret: "test-secret", allowlist: ["mcp-hive.com
 
 // Legit allowlisted host gets processed.
 const blocklisted = new Inbox({ secret: "test-secret", allowlist: ["mcp-hive.com"] });
-const badDeliver = blocklisted.deliver(h1.handle, {
+const badDeliver = await blocklisted.deliver(h1.handle, {
   from: "attacker@evil.net",
   subject: "Verify your account",
   text: "Click: https://evil.net/verify?token=xyz",
@@ -30,7 +30,7 @@ const badDeliver = blocklisted.deliver(h1.handle, {
 check("SSRF: non-allowlisted host NOT captured", badDeliver.verificationsFound.length === 0, JSON.stringify(badDeliver.verificationsFound));
 
 // Allowlisted host gets captured (the legit flow).
-const goodDeliver = secureInbox.deliver(h1.handle, {
+const goodDeliver = await secureInbox.deliver(h1.handle, {
   from: "no-reply@mcp-hive.com",
   subject: "Verify your account",
   text: "Click to activate: https://mcp-hive.com/api/auth/verify-email?token=***&id=123",
@@ -39,8 +39,8 @@ const goodDeliver = secureInbox.deliver(h1.handle, {
 check("allowlisted host captured", goodDeliver.verificationsFound.length === 1, JSON.stringify(goodDeliver.verificationsFound));
 
 // --- Signed proof is verifiable and non-forgeable ---
-const vid = secureInbox.listVerifications(h1.handle)[0].id;
-const proc = secureInbox.processVerification(h1.handle, vid);
+const vid = (await secureInbox.listVerifications(h1.handle))[0].id;
+const proc = await secureInbox.processVerification(h1.handle, vid);
 check("verification processed", proc.ok && /processed/.test(proc.handled.status));
 check("proof is HMAC-signed (has dot-payload)", proc.proof && proc.proof.includes("."));
 const verbok = secureInbox.verifyProof(proc.proof);
@@ -57,7 +57,7 @@ const verbad2 = otherInbox.verifyProof(proc.proof);
 check("proof from different secret rejected", verbad2.ok === false && verbad2.error === "invalid_signature");
 
 // Missing verification -> not_found
-const nf = secureInbox.processVerification(h1.handle, "does-not-exist");
+const nf = await secureInbox.processVerification(h1.handle, "does-not-exist");
 check("missing verification -> not_found", nf.ok === false && nf.error === "not_found");
 
 // scanVerificationLinks standalone with allowlist predicate

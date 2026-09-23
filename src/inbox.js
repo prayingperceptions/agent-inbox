@@ -11,10 +11,13 @@
 //    (e.g. agent-authority's evidence ledger).
 
 import crypto from "node:crypto";
+import { MemoryStore } from "./store.js";
 
 export class Inbox {
-  constructor({ secret = "", allowlist = [] } = {}) {
-    this.store = new Map(); // handle -> { messages: [], verifications: [] }
+  constructor({ secret = "", allowlist = [], store, persist }) {
+    this.store = store || MemoryStore; // durable adapter (defaults to in-memory)
+    this.persist = persist !== false; // if true, writes through to store
+    this._cache = new Map(); // runtime cache mirror for fast reads
     this.secret = secret || process.env.INBOX_SECRET || "dev-insecure-secret";
     this.allowlist = new Set(
       (allowlist.length
@@ -34,34 +37,42 @@ export class Inbox {
     return false;
   }
 
-  _ensure(handle) {
-    if (!this.store.has(handle)) this.store.set(handle, { messages: [], verifications: [] });
-    return this.store.get(handle);
+  _key(handle) { return `inbox:${handle}`; }
+
+  async _box(handle) {
+    if (this._cache.has(handle)) return this._cache.get(handle);
+    let box = await this.store.get(this._key(handle));
+    if (!box) box = { messages: [], verifications: [] };
+    this._cache.set(handle, box);
+    return box;
   }
 
-  deliver(handle, { from, subject, text = "", html = "", receivedAt = new Date().toISOString() }) {
-    const box = this._ensure(handle);
+  _ensure(handle) { return this._box(handle); }
+
+  async deliver(handle, { from, subject, text = "", html = "", receivedAt = new Date().toISOString() }) {
+    const box = await this._box(handle);
     const message = { id: `${handle}-${box.messages.length + 1}`, from, subject, text, html, receivedAt };
     box.messages.push(message);
     const verifications = scanVerificationLinks(message, this.isDomainAllowed.bind(this));
     box.verifications.push(...verifications);
+    if (this.persist) await this.store.set(this._key(handle), box);
     return { delivered: true, messageId: message.id, verificationsFound: verifications };
   }
 
-  listMessages(handle) {
-    const box = this.store.get(handle);
-    return (box && box.messages) || [];
+  async listMessages(handle) {
+    const box = await this._box(handle);
+    return box.messages;
   }
 
-  listVerifications(handle) {
-    const box = this.store.get(handle);
-    return (box && box.verifications) || [];
+  async listVerifications(handle) {
+    const box = await this._box(handle);
+    return box.verifications;
   }
 
   // Process a verification: HMAC-signs a proof binding handle+id+timestamp.
-  processVerification(handle, verificationId) {
-    const box = this.store.get(handle);
-    const v = box && box.verifications.find((x) => x.id === verificationId);
+  async processVerification(handle, verificationId) {
+    const box = await this._box(handle);
+    const v = box.verifications.find((x) => x.id === verificationId);
     if (!v) return { ok: false, error: "not_found" };
     if (!v.processedAt) {
       v.processedAt = new Date().toISOString();
@@ -69,6 +80,7 @@ export class Inbox {
     }
     const payload = `${handle}:${v.id}:${v.processedAt}`;
     const proof = payload + "." + this._sign(payload);
+    if (this.persist) await this.store.set(this._key(handle), box);
     return { ok: true, handled: v, proof };
   }
 

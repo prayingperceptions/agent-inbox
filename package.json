@@ -10,12 +10,35 @@
     "./inbox": "./src/inbox.js",
     "./package.json": "./package.json"
   },
-  "files": ["src/", "LICENSE", "README.md"],
+  "files": [
+    "src/",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "start": "node src/server.js",
     "test": "node test.js"
   },
-  "engines": { "node": ">=18" },
-  "keywords": ["x402", "base", "coinbase", "agent-identity", "inbox", "wallet-email", "micropayments", "verification", "sign-in-with-wallet", "ssrf", "hmac"],
-  "license": "MIT"
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "x402",
+    "base",
+    "coinbase",
+    "agent-identity",
+    "inbox",
+    "wallet-email",
+    "micropayments",
+    "verification",
+    "sign-in-with-wallet",
+    "ssrf",
+    "hmac"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@noble/curves": "^1.9.7",
+    "@noble/hashes": "^1.8.0",
+    "@noble/secp256k1": "^2.3.0"
+  }
 }

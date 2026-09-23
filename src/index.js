@@ -11,6 +11,8 @@
 
 export { classifyAddress, handleForAddress, handleFingerprint } from "./address.js";
 export { Inbox, scanVerificationLinks } from "./inbox.js";
+export { MemoryStore, FileStore, connectStore } from "./store.js";
+export { WalletAuth, createWalletAuthMiddleware, recoverEvmAddress } from "./wallet-auth.js";
 
 // Re-export payment gating config helpers (x402 payline).
 export { paymentRequirements as wrapPaymentRequirements } from "./x402.js";
