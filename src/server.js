@@ -13,7 +13,7 @@ import { handleForAddress } from "./address.js";
 import { gatePayment, paymentRequirements } from "./x402.js";
 
 const PORT = parseInt(process.env.PORT || "3411", 10);
-const inbox = new Inbox();
+const inbox = new Inbox(); // SECURITY: reads VERIFY_DOMAIN_ALLOWLIST env; if unset, link-scanning is OFF.
 
 function send(res, status, obj, headers = {}) {
   res.writeHead(status, { "Content-Type": "application/json", ...headers });

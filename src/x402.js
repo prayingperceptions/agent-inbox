@@ -11,11 +11,11 @@ const USDC_BASE_MAINNET = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 
 function cfg(env) {
   return {
-    mode: env.PAYMENT_MODE || env.X402_MODE || "mock",
-    priceUsdc: env.PRICE_USDC || env.X402_PRICE_USDC || "0.005",
-    payTo: env.X402_PAY_TO || "0x2091125bFE4259b2CfA889165Beb6290d0Df5DeA",
-    facilitatorUrl: env.X402_FACILITATOR_URL || "https://api.cdp.coinbase.com/platform/v2/x402",
-    network: env.X402_NETWORK || "eip155:8453",
+    mode: env.PAYMENT_MODE || env.X402_MODE || 'live', // FAIL-CLOSED: unset => live (402), never free
+    priceUsdc: env.PRICE_USDC || env.X402_PRICE_USDC || '0.005',
+    payTo: env.X402_PAY_TO || '0x2091125bFE4259b2CfA889165Beb6290d0Df5DeA',
+    facilitatorUrl: env.X402_FACILITATOR_URL || 'https://api.cdp.coinbase.com/platform/v2/x402',
+    network: env.X402_NETWORK || 'eip155:8453',
     asset: env.X402_ASSET || USDC_BASE_MAINNET,
   };
 }
