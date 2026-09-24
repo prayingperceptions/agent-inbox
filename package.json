@@ -4,12 +4,6 @@
   "description": "Agentic identity + inbox where the email address IS a readable, wallet-derived handle; verifications are SSRF-safe and HMAC-signed; the identity receives x402 micropayments. 'Sign in with your wallet address.'",
   "type": "module",
   "main": "src/server.js",
-  "exports": {
-    ".": "./src/index.js",
-    "./address": "./src/address.js",
-    "./inbox": "./src/inbox.js",
-    "./package.json": "./package.json"
-  },
   "files": [
     "src/",
     "LICENSE",
