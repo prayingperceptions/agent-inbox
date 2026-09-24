@@ -16,7 +16,7 @@ const PORT = parseInt(process.env.PORT || "3411", 10);
 const inbox = new Inbox(); // SECURITY: reads VERIFY_DOMAIN_ALLOWLIST env; if unset, link-scanning is OFF.
 
 function send(res, status, obj, headers = {}) {
-  res.writeHead(status, { "Content-Type": "application/json", ...headers });
+  res.writeHead(status, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", ...headers });
   res.end(JSON.stringify(obj, null, 2));
 }
 
