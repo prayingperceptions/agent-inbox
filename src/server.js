@@ -1,5 +1,6 @@
 // src/server.js — agent-inbox HTTP server (zero-dependency Node).
 // Endpoints:
+//   GET  /                                -> landing page
 //   GET  /health                          -> status
 //   GET  /handle/:address                 -> derived agentic handle (free)
 //   POST /inbox/:handle/deliver           -> deliver an inbound message (from upstream mailbox/webhook)
@@ -104,6 +105,33 @@ const server = http.createServer(async (req, res) => {
   if (method === "GET" && path.startsWith("/pay/")) {
     const address = decodeURIComponent(path.slice("/pay/".length));
     return send(res, 200, { address, payTo: process.env.X402_PAY_TO || "0x2091125bFE4259b2CfA889165Beb6290d0Df5DeA", requirements: paymentRequirements(url.toString(), process.env) });
+  }
+
+  // Landing page.
+  if (method === "GET" && path === "/") {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Access-Control-Allow-Origin": "*" });
+    res.end(`<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>agent-inbox — wallet address as email for AI agents</title>
+<style>body{font-family:system-ui,sans-serif;max-width:42rem;margin:4rem auto;padding:0 1.5rem;line-height:1.6;color:#111}code{background:#f4f4f5;padding:.15em .4em;border-radius:4px}a{color:#0a58ca}h1{font-size:1.9rem}li{margin:.3em 0}</style>
+</head>
+<body>
+<h1>agent-inbox</h1>
+<p>Wallet address as email for AI agents. Derive a handle from any wallet address, receive messages, auto-detect verification links, and gate premium actions behind x402 micropayments on Base.</p>
+<h2>Endpoints</h2>
+<ul>
+<li><code>GET /health</code> — service status</li>
+<li><code>GET /handle/:address</code> — derive an agentic handle (free)</li>
+<li><code>POST /inbox/:handle/deliver</code> — deliver an inbound message</li>
+<li><code>GET /inbox/:handle/messages</code> — list messages</li>
+<li><code>GET /inbox/:handle/verifications</code> — list auto-detected verification links</li>
+<li><code>POST /inbox/:handle/verify/:id</code> — process a verification (x402-gated in live mode)</li>
+<li><code>GET /pay/:address</code> — x402 payment requirements for a handle's payline</li>
+</ul>
+<p><a href="/health">health check</a> · <a href="https://github.com/prayingperceptions/agent-inbox">GitHub</a></p>
+</body></html>`);
+    return;
   }
 
   return send(res, 404, { error: "not found", endpoints: ["/health", "/handle/:address", "/inbox/:handle/deliver", "/inbox/:handle/messages", "/inbox/:handle/verifications", "/inbox/:handle/verify/:id", "/pay/:address"] });
